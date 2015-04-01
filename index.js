@@ -20,6 +20,7 @@ function migCdn(options){
         isunzip: 1
     }, options);
 
+
     // Creating a stream through which each file will pass
     return through.obj(function(file, enc, cb){
 
@@ -59,7 +60,7 @@ function migCdn(options){
                     if(bodyObj["ret_code"] !== 200){
                         console.log(JSON.stringify({file: filepath, 'msg': bodyObj["err_msg"], 'url': 'not found'}));
                     }else{
-                        console.log(filepath + ' 上传成功！');
+                        console.log('上传成功：' + filepath);
                     }
 
                 }else{
