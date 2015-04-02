@@ -8,7 +8,7 @@ var fs = require('fs-extra'),
 
 function migCdn(options){
     if(!options){
-        throw new PluginError(gulp-migcdn, 'Missing options');
+        throw new PluginError('gulp-migcdn', 'Missing options');
     }
 
     options = lodash.extend({
