@@ -3,12 +3,12 @@ var fs = require('fs-extra'),
     request = require('request'),
     lodash = require('lodash'),
     through = require('through2'),
-    gutil = require('gulp-util'),
-    PluginError = gutil.PluginError;
+    util = require('gulp-util'),
+    PluginError = util.PluginError;
 
 function migCdn(options){
     if(!options){
-        throw new PluginError('gulp-migcdn', 'Missing options');
+        throw new PluginError(gulp-migcdn, 'Missing options');
     }
 
     options = lodash.extend({
@@ -20,13 +20,12 @@ function migCdn(options){
         isunzip: 1
     }, options);
 
-
     // Creating a stream through which each file will pass
     return through.obj(function(file, enc, cb){
 
         var filepath = file.path;
 
-        console.log('开始上传：' + filepath);
+        util.log('uploading...');
 
         fs.stat(filepath, function(err, stats){
 
@@ -44,7 +43,6 @@ function migCdn(options){
                 '&filesize=' + fileSize +
                 '&isunzip=' + options.isunzip;
 
-
             //读取文件流上传
             fs.createReadStream(filepath).pipe(request({
                 method: 'POST',
@@ -52,19 +50,19 @@ function migCdn(options){
                 headers: {'X-CDN-Authentication': options.key}
             }, function(error, response, body){
                 if(error){
-                    console.log("网络错误：" + filepath + "，错误信息：" + JSON.stringify(error));
+                    util.colors.red("Network error：" + filepath + ", error message：" + JSON.stringify(error));
                 }else if(response.statusCode === 200){
                     //上传成功
                     var bodyObj = JSON.parse(body);
 
                     if(bodyObj["ret_code"] !== 200){
-                        console.log(JSON.stringify({file: filepath, 'msg': bodyObj["err_msg"], 'url': 'not found'}));
+                        util.log(JSON.stringify({file: filepath, 'msg': bodyObj["err_msg"], 'url': 'not found'}));
                     }else{
-                        console.log('上传成功：' + filepath);
+                        util.log('Success!');
                     }
 
                 }else{
-                    console.log("上传错误：" + filepath + JSON.stringify({
+                    util.colors.red("Upolad error：" + filepath + JSON.stringify({
                         'msg': 'error',
                         'url': 'upload error, response status code is ' + response.statusCode
                     }));
@@ -79,4 +77,3 @@ function migCdn(options){
 
 // Exporting the plugin main function
 module.exports = migCdn;
-
