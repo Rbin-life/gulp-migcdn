@@ -1,6 +1,6 @@
 {
   "name": "gulp-migcdn",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "upload files to cdn",
   "main": "index.js",
   "repository": {

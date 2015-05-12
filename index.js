@@ -39,7 +39,7 @@ function migCdn(options){
                 '&user=' + options.user +
                 '&filename=' + fileName +
                 '&filetype=' + fileType.replace('.', '') +
-                '&filepath=' + options.dest +
+                '&filepath=' + options.dest.replace(/\\/g, '/') +
                 '&filesize=' + fileSize +
                 '&isunzip=' + options.isunzip;
 
