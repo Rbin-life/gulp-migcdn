@@ -1,10 +1,9 @@
-var fs = require('fs-extra'),
-    path = require('path'),
+var path = require('path'),
     request = require('request'),
     lodash = require('lodash'),
     through = require('through2'),
-    util = require('gulp-util'),
-    PluginError = util.PluginError;
+    gutil = require('gulp-util'),
+    PluginError = gutil.PluginError;
 
 function migCdn(options){
     if(!options){
@@ -20,56 +19,63 @@ function migCdn(options){
         isunzip: 1
     }, options);
 
+    var fileCount = 0;
+
     // Creating a stream through which each file will pass
     return through.obj(function(file, enc, cb){
 
-        var filepath = file.path;
+        var filepath = file.path,
+            fileType = path.extname(filepath),
+            fileName = path.basename(filepath, fileType),
+            fileSize = file.contents.length;
 
-        util.log('uploading...');
+        //拼接 URL
+        var upload_url = options.upload_url + "?" +
+            'appname=' + options.appname +
+            '&user=' + options.user +
+            '&filename=' + fileName +
+            '&filetype=' + fileType.replace('.', '') +
+            '&filepath=' + options.dest.replace(/\\/g, '/') +
+            '&filesize=' + fileSize +
+            '&isunzip=' + options.isunzip;
 
-        fs.stat(filepath, function(err, stats){
+        var self = this;
 
-            var fileType = path.extname(filepath),
-                fileName = path.basename(filepath, fileType),
-                fileSize = stats["size"];
+        gutil.log('uploading...');
 
-            //拼接 URL
-            var upload_url = options.upload_url + "?" +
-                'appname=' + options.appname +
-                '&user=' + options.user +
-                '&filename=' + fileName +
-                '&filetype=' + fileType.replace('.', '') +
-                '&filepath=' + options.dest.replace(/\\/g, '/') +
-                '&filesize=' + fileSize +
-                '&isunzip=' + options.isunzip;
+        //读取文件流上传
+        file.pipe(request({
+            method: 'POST',
+            uri: upload_url,
+            headers: {'X-CDN-Authentication': options.key}
+        }, function(error, response, body){
 
-            //读取文件流上传
-            fs.createReadStream(filepath).pipe(request({
-                method: 'POST',
-                uri: upload_url,
-                headers: {'X-CDN-Authentication': options.key}
-            }, function(error, response, body){
-                if(error){
-                    util.colors.red("Network error：" + filepath + ", error message：" + JSON.stringify(error));
-                }else if(response.statusCode === 200){
-                    //上传成功
-                    var bodyObj = JSON.parse(body);
+            if(error){
+                gutil.colors.red("Network error：" + filepath + ", error message：" + JSON.stringify(error));
+            }else if(response.statusCode === 200){
+                //上传成功
+                var bodyObj = JSON.parse(body);
 
-                    if(bodyObj["ret_code"] !== 200){
-                        util.log(JSON.stringify({file: filepath, 'msg': bodyObj["err_msg"], 'url': 'not found'}));
-                    }else{
-                        util.log('Success!');
-                    }
-
+                if(bodyObj["ret_code"] !== 200){
+                    gutil.log(JSON.stringify({file: filepath, 'msg': bodyObj["err_msg"], 'url': 'not found'}));
                 }else{
-                    util.colors.red("Upolad error：" + filepath + JSON.stringify({
-                        'msg': 'error',
-                        'url': 'upload error, response status code is ' + response.statusCode
-                    }));
+                    fileCount++;
+                    self.push(file);
+                    cb();
                 }
-            }));
-
-        });
+            }else{
+                gutil.colors.red("Upolad error：" + filepath + JSON.stringify({
+                    'msg': 'error',
+                    'url': 'upload error, response status code is ' + response.statusCode
+                }));
+            }
+        }));
+    }, function (cb) {
+        if (fileCount > 0) {
+            gutil.log('gulp-migcdn:', gutil.colors.green(fileCount, fileCount === 1 ? 'file' : 'files', 'uploaded successfully'));
+        } else {
+            gutil.log('gulp-migcdn:', gutil.colors.yellow('No files uploaded'));
+        }
 
         cb();
     });
