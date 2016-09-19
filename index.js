@@ -47,7 +47,10 @@ function migCdn(options){
         file.pipe(request({
             method: 'POST',
             uri: upload_url,
-            headers: {'X-CDN-Authentication': options.key}
+            headers: {
+                'X-CDN-Authentication': options.key,
+                'Content-Type': fileSize
+            }
         }, function(error, response, body){
 
             if(error){
