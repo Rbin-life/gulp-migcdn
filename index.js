@@ -49,7 +49,7 @@ function migCdn(options){
             uri: upload_url,
             headers: {
                 'X-CDN-Authentication': options.key,
-                'Content-Type': fileSize
+                'Content-Length': fileSize
             }
         }, function(error, response, body){
 
